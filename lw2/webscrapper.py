@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     visit(url)
 
-    with open(f"{get_domain_name(url)}_valid_internal_links.txt", "w") as f:
+    with open(f"result/{get_domain_name(url)}_valid_internal_links.txt", "w") as f:
         total = 0
         print("Valid internal links".strip(), file=f)
         for link in result:
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         print(f"Check time: {datetime.datetime.now()}".strip(), file=f)
         print(f"Total links: {total}".strip(), file=f)
 
-    with open(f"{get_domain_name(url)}_invalid_internal_links.txt", "w") as f:
+    with open(f"result/{get_domain_name(url)}_invalid_internal_links.txt", "w") as f:
         total = 0
         print("Invalid internal links".strip(), file=f)
         for link in result:
