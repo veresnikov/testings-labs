@@ -8,6 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class URL:
     url: str
+    previous_url: str
     status: int
 
     def __hash__(self):
@@ -20,6 +21,8 @@ invalid_urls = set()
 
 total_urls_visited = 0
 
+previous_url = ""
+
 
 def is_valid_url(url: str) -> bool:
     parsed = urlparse(url)
@@ -30,11 +33,25 @@ def get_domain_name(url: str) -> str:
     return urlparse(url).netloc
 
 
+def is_blocked_content_type(url: str) -> bool:
+    types = {"mp4", "pdf", "doc", "docx", "xlsx", "xls", "ppt", "pptx", "jpeg", "jpg", "png", "rar", "7z", "zip",
+             "webp", "webm", "gif"}
+    for type in types:
+        if url.find(type) != -1:
+            return True
+
+
 def find_all_links(url: str) -> set:
+    global previous_url
+
     print('check ' + url)
     links = set()
-    req = requests.get(url)
-    result.add(URL(url, req.status_code))
+    if is_blocked_content_type(url):
+        req = requests.head(url, timeout=60)
+        result.add(URL(url, previous_url, req.status_code))
+        return links
+    req = requests.get(url, timeout=60)
+    result.add(URL(url, previous_url, req.status_code))
     soup = BeautifulSoup(req.content, "html.parser")
     for a_tag in soup.findAll("a"):
         href = a_tag.attrs.get("href")
@@ -52,6 +69,7 @@ def find_all_links(url: str) -> set:
             continue
         links.add(href)
         internal_urls.add(href)
+        previous_url = url
     return links
 
 
@@ -89,7 +107,7 @@ if __name__ == "__main__":
         print("Invalid internal links".strip(), file=f)
         for link in result:
             if link.status > 400:
-                print(link.url + " " + f"[{link.status}]".strip(), file=f)
+                print(link.previous_url + " -> " + link.url + " " + f"[{link.status}]".strip(), file=f)
                 total += 1
         print(f"Check time: {datetime.datetime.now()}".strip(), file=f)
         print(f"Total links: {total}".strip(), file=f)
