@@ -18,6 +18,7 @@ class MyTestCase(unittest.TestCase):
                     expected = lines[i + 1]
                     i += 3
                     output = runProcess('./triangle.py', input)
+                    print(f"run process: ./triangle.py {input}")
                     if expected == output:
                         r.write('success\n')
                     else:

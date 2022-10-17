@@ -1,5 +1,14 @@
 import sys
 
+MAX = 2.76392450374688E+040
+MIN = -MAX
+
+
+def check_overflow(num: float):
+    if num > MAX or num < MIN:
+        raise OverflowError
+
+
 if len(sys.argv) != 4:
     print('неизвестная ошибка')
     exit()
@@ -12,7 +21,14 @@ try:
     a = float(sys.argv[1])
     b = float(sys.argv[2])
     c = float(sys.argv[3])
+
+    check_overflow(a)
+    check_overflow(b)
+    check_overflow(c)
 except ValueError:
+    print('неизвестная ошибка')
+    exit()
+except OverflowError:
     print('неизвестная ошибка')
     exit()
 
