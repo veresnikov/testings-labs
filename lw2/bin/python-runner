@@ -7,19 +7,7 @@ BUILDER_IMAGE=python:3.10.8
 echo "pulling $BUILDER_IMAGE..."
 docker pull "$BUILDER_IMAGE" > /dev/null
 
-USER_ID=$(id -u)
-SSH_DIR=$HOME/.ssh
-CACHE_DIR=$HOME/.cache
-LOCAL_DIR=$HOME/.local
 docker run \
-  --interactive \
-  --tty \
-  --user "$USER_ID" \
-  --volume "/etc/passwd:/etc/passwd:ro" \
-  --volume "/etc/group:/etc/group:ro" \
-  --volume "$SSH_DIR:$SSH_DIR" \
-  --volume "$CACHE_DIR:$CACHE_DIR" \
-  --volume "$LOCAL_DIR:$LOCAL_DIR" \
   --volume "$PWD:$PWD" \
   --workdir "$PWD" \
   "$BUILDER_IMAGE" \
