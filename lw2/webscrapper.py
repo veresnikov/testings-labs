@@ -57,7 +57,10 @@ def find_all_links(url: str) -> set:
         href = a_tag.attrs.get("href")
         if href == "" or href is None:
             continue
-        href = urljoin(url, href)
+
+        if urlparse(href).netloc == "":
+            href = urljoin(url, href)
+
         parsed_href = urlparse(href)
         href = parsed_href.scheme + "://" + parsed_href.netloc + parsed_href.path
         if not is_valid_url(href):
