@@ -1,4 +1,7 @@
 import datetime
+import os
+import time
+
 import requests
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
@@ -14,6 +17,10 @@ class URL:
     def __hash__(self):
         return url.__hash__()
 
+
+retry_timeout = os.environ.get('RETRY_TIMEOUT', 60)
+retry_count = os.environ.get('RETRY_COUNT', 3)
+request_timout = os.environ.get('REQUEST_TIMEOUT', 60)
 
 result = set()
 internal_urls = set()
@@ -41,16 +48,38 @@ def is_blocked_content_type(url: str) -> bool:
             return True
 
 
+def get_with_retry(url: str) -> requests.Response:
+    response = requests.Response
+    for i in range(retry_count):
+        print(f"{i} try get request {url}")
+        response = requests.get(url, timeout=request_timout)
+        if response.status_code < 500:
+            return response
+        time.sleep(retry_timeout)
+    return response
+
+
+def head_with_retry(url: str) -> requests.Response:
+    response = requests.Response
+    for i in range(retry_count):
+        print(f"{i} try head request {url}")
+        response = requests.head(url, timeout=request_timout)
+        if response.status_code < 500:
+            return response
+        time.sleep(retry_timeout)
+    return response
+
+
 def find_all_links(url: str) -> set:
     global previous_url
 
     print('check ' + url)
     links = set()
     if is_blocked_content_type(url):
-        req = requests.head(url, timeout=60)
+        req = head_with_retry(url)
         result.add(URL(url, previous_url, req.status_code))
         return links
-    req = requests.get(url, timeout=60)
+    req = get_with_retry(url)
     result.add(URL(url, previous_url, req.status_code))
     soup = BeautifulSoup(req.content, "html.parser")
     for a_tag in soup.findAll("a"):
