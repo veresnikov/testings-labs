@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+BUILDER_IMAGE=python:3.10.8
+
+echo "pulling $BUILDER_IMAGE..."
+docker pull "$BUILDER_IMAGE" >/dev/null
+
+docker run \
+  --volume "$PWD:$PWD" \
+  --workdir "$PWD" \
+  -it \
+  --tty \
+  "$BUILDER_IMAGE" \
+  "$@"

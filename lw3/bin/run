@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+cd src
+
+pip install coverage || exit
+
+python -m coverage run service_test.py
+
+python -m coverage report
