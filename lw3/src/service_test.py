@@ -1,76 +1,57 @@
 import unittest
-from memory_document_storage import MemoryDocumentStorage
+from document import Document
+from mock_document_storage import MockDocumentStorage, Specification
 from service import Service
 
 
-def create_test_service() -> Service:
-    return Service(MemoryDocumentStorage())
+def init() -> (Service, MockDocumentStorage):
+    mock_storage = MockDocumentStorage()
+    return Service(mock_storage), mock_storage
 
 
 class TestService(unittest.TestCase):
     def test_create_document(self):
-        service = create_test_service()
-        ids = set()
-        count_documents = 5
-        for i in range(count_documents):
-            ids.add(service.CreateDocument(f"test document {i}"))
-        documents = service.FindDocuments(ids)
-        self.assertEqual(len(documents), count_documents, "Created documents")
+        service, mock_storage = init()
+        service.CreateDocument("test document")
+        result = mock_storage.get_document(Specification())
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].get_title(), "test document")
+        self.assertEqual(result[0].get_body(), "")
 
-    def test_update_document(self):
-        service = create_test_service()
-        old_title = "title"
-        id = service.CreateDocument(old_title)
-        ids = set()
-        ids.add(id)
-        self.assertEqual(service.FindDocuments(ids=ids)[0].get_title(), old_title, "document create with initial title")
-        new_title = "42"
-        service.EditTitle(id, new_title)
-        self.assertEqual(service.FindDocuments(ids=ids)[0].get_title(), new_title, "document update title")
-        self.assertEqual(service.FindDocuments(ids=ids)[0].get_body(), "", "document create with initial body")
-        new_body = "42 42 42"
-        service.EditBody(id, new_body)
-        self.assertEqual(service.FindDocuments(ids=ids)[0].get_body(), new_body, "document update body")
-
-    def test_delete_and_restore_document(self):
-        service = create_test_service()
-        id = service.CreateDocument("test")
-        ids = set()
-        ids.add(id)
-        self.assertEqual(service.FindDocuments(ids=ids, include_deleted=True)[0].__is_deleted__(), False,
-                         "create document is deleted")
+    def test_delete_document(self):
+        service, mock_storage = init()
+        id = mock_storage.next_id()
+        mock_storage.set_documents([Document(id, "test document", "")])
         service.DeleteDocument(id)
-        self.assertEqual(service.FindDocuments(ids=ids, include_deleted=True)[0].__is_deleted__(), True,
-                         "document is not deleted")
+        result = mock_storage.get_document(Specification())
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].__is_deleted__(), True)
+
+    def test_restore_document(self):
+        service, mock_storage = init()
+        id = mock_storage.next_id()
+        doc = Document(id, "test document", "")
+        doc.delete()
+        mock_storage.set_documents([doc])
         service.RestoreDocument(id)
-        self.assertEqual(service.FindDocuments(ids=ids, include_deleted=True)[0].__is_deleted__(), False,
-                         "document is not restored")
+        result = mock_storage.get_document(Specification())
+        self.assertEqual(result[0].__is_deleted__(), False)
 
-    def test_document_exceptions(self):
-        service = create_test_service()
-        id = service.CreateDocument("test")
-        ids = set()
-        ids.add(id)
-        with self.assertRaises(Exception) as context:
-            service.RestoreDocument(id)
-        self.assertEqual(str(context.exception), 'document already restored')
+    def test_set_title(self):
+        service, mock_storage = init()
+        id = mock_storage.next_id()
+        mock_storage.set_documents([Document(id, "test document", "")])
+        service.EditTitle(id, "new title")
+        result = mock_storage.get_document(Specification())
+        self.assertEqual(result[0].get_title(), "new title")
 
-        with self.assertRaises(Exception) as context:
-            service.FindDocuments(ids)[0].set_body('x' * 101)
-        self.assertEqual(str(context.exception), 'body too large')
-
-        with self.assertRaises(Exception) as context:
-            service.FindDocuments(ids)[0].set_title('x' * 51)
-        self.assertEqual(str(context.exception), 'title too large')
-
-        service.DeleteDocument(id)
-        with self.assertRaises(Exception) as context:
-            service.DeleteDocument(id)
-        self.assertEqual(str(context.exception), 'document already deleted')
-
-        with self.assertRaises(Exception) as context:
-            service.FindDocuments(ids, include_deleted=True)[0].set_body('x' * 10)
-        self.assertEqual(str(context.exception), 'document is deleted')
+    def test_set_body(self):
+        service, mock_storage = init()
+        id = mock_storage.next_id()
+        mock_storage.set_documents([Document(id, "test document", "test body")])
+        service.EditBody(id, "new body")
+        result = mock_storage.get_document(Specification())
+        self.assertEqual(result[0].get_body(), "new body")
 
 
 if __name__ == '__main__':
